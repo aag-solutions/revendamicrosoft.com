@@ -1,0 +1,42 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+pool:
+  vmImage: 'ubuntu-18.04'
+trigger: none
+steps:
+- checkout: self
+  persistCredentials: true
+- task: CmdLine@2
+  inputs:
+    script: 'curl https://www.revendamicrosoft.com/wp-content/uploads/wp2static-processed-site.zip --output $(Build.ArtifactStagingDirectory)/wp2static-processed-site.zip'
+    workingDirectory: '$(Build.ArtifactStagingDirectory)'
+- task: CmdLine@2
+  inputs:
+    script: 'git config --global user.email "michel.nyx@outlook.com" && git config --global user.name "Michel Oliveira"'
+    workingDirectory: '$(Build.ArtifactStagingDirectory)'
+- task: CmdLine@2
+  inputs:
+    script: 'mkdir $(Build.ArtifactStagingDirectory)/.git && mv /home/vsts/work/1/s/.git/* $(Build.ArtifactStagingDirectory)/.git'
+    workingDirectory: '$(Build.ArtifactStagingDirectory)'
+- task: CmdLine@2
+  inputs:
+    script: 'find . ! -name "CNAME" ! -name "404.html" ! -name "azure-pipelines.yml" -type f -exec rm -rf {} +'
+    workingDirectory: '/home/vsts/work/1/s'
+- task: CmdLine@2
+  inputs:
+    script: 'unzip -o $(Build.ArtifactStagingDirectory)/wp2static-processed-site.zip -d /home/vsts/work/1/s'
+    workingDirectory: '$(Build.ArtifactStagingDirectory)'
+    failOnStderr: false
+  continueOnError: true
+- task: CmdLine@2
+  inputs:
+    script: 'mv $(Build.ArtifactStagingDirectory)/.git/* /home/vsts/work/1/s/.git'
+    workingDirectory: '$(Build.ArtifactStagingDirectory)'
+- task: CmdLine@2
+  inputs:
+    script: 'git add . && git commit -m "Merge" && git push origin HEAD:main'
+    workingDirectory: '/home/vsts/work/1/s'
+  continueOnError: true
